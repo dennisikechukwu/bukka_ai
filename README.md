@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Yelp AI Agent
 
-## Getting Started
+An AI-powered food review and restaurant recommendation app with a Nigerian cultural localization layer. The AI writes and thinks in an authentic Nigerian voice — expressive, blunt, or anywhere in between.
 
-First, run the development server:
+## Features
+
+- **Review Generator** — Build a persona, describe the restaurant, generate a Nigerian-voiced Yelp review.
+- **Restaurant Recommender** — Tell the AI who you are; it surfaces the restaurants most likely to match your taste.
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- Tailwind CSS v4
+- TypeScript
+- Lucide React (icons)
+
+## Setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment variables
+
+Copy the example file and set your API URL:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Edit `.env.local`:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+Replace `http://localhost:8000` with the URL of your running backend.
+
+### 3. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Connecting to the backend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The app makes two API calls:
 
-## Learn More
+| Endpoint | Method | Description |
+|---|---|---|
+| `/generate-review` | POST | Generate a single restaurant review |
+| `/recommend` | POST | Get ranked restaurant recommendations |
 
-To learn more about Next.js, take a look at the following resources:
+Both endpoints expect a `persona` object in the request body. See `lib/agents.ts` for the full TypeScript interface definitions.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Replacing asset placeholders
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All placeholder slots are marked with `// TODO` comments in the source and render a dashed-border box so the UI is never blank.
 
-## Deploy on Vercel
+| Placeholder | Location | What to replace with |
+|---|---|---|
+| App logo | `components/Navbar.tsx` | Your logo image (SVG or PNG, ~96×32px) |
+| Restaurant photo | `components/BusinessForm.tsx` | Real restaurant photo upload |
+| Review empty state | `app/review-generator/page.tsx` | Optional illustration |
+| Favicon | `public/favicon.ico` | Your app icon (32×32 or 64×64 ICO) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+> **TODO:** Replace `/public/favicon.ico` with a real app icon.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To swap out a placeholder, find the `ImagePlaceholder` component at the `// TODO` comment and replace it with a `next/image` `<Image>` tag pointing to your asset.
+
+## Deployment (Vercel)
+
+1. Push your repository to GitHub.
+2. Import the project at [vercel.com](https://vercel.com).
+3. In **Settings → Environment Variables** add:
+   - `NEXT_PUBLIC_API_URL` — the public URL of your deployed backend
+4. Click **Deploy**.
+
+Make sure your backend CORS policy allows requests from your Vercel domain.
