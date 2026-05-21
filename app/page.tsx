@@ -6,7 +6,7 @@ import { Sparkles, PenLine, Search } from 'lucide-react'
 export default function Home() {
   return (
     <div
-      className="flex-1 flex flex-col items-center px-6"
+      className="flex-1 flex flex-col items-center px-4 sm:px-6"
       style={{ paddingTop: '96px', paddingBottom: '96px' }}
     >
       <div className="flex flex-col items-center w-full" style={{ maxWidth: '640px' }}>

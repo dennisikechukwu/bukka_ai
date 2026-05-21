@@ -1,19 +1,26 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bukka-ai.vercel.app'
+
+export type Region = 'yoruba' | 'igbo' | 'hausa' | 'edo' | 'general'
+export type Tone = 'expressive' | 'blunt' | 'formal' | 'casual' | 'sarcastic'
+export type Sentiment = 'positive' | 'negative' | 'mixed'
+export type PriceRange = '$' | '$$' | '$$$' | '$$$$'
 
 export interface PersonaObject {
   name: string
   age?: number
   city?: string
-  tone: 'expressive' | 'blunt' | 'formal' | 'casual' | 'sarcastic'
+  region: Region
+  tone: Tone
   food_preferences: string[]
   avg_star_rating: number
   bio: string
 }
 
 export interface BusinessAttributes {
-  price_range: '$' | '$$' | '$$$' | '$$$$'
+  price_range: PriceRange
   outdoor_seating: boolean
   wifi: boolean
+  reservations: boolean
 }
 
 export interface BusinessObject {
@@ -35,8 +42,17 @@ export interface GenerateReviewResponse {
   review: string
   stars: number
   word_count: number
-  sentiment: 'positive' | 'negative' | 'mixed'
+  sentiment: Sentiment
   generation_time_ms: number
+}
+
+// ─── Recommender ────────────────────────────────────────────────────────────
+
+export interface HistoryItem {
+  business_name: string
+  category: string
+  stars: number
+  notes?: string
 }
 
 export interface RecommendationFilters {
@@ -45,14 +61,17 @@ export interface RecommendationFilters {
   categories: string[]
   min_stars: number
   max_results: number
+  target_domain?: string
 }
 
 export interface GetRecommendationsRequest {
   persona: PersonaObject
   filters: RecommendationFilters
+  history?: HistoryItem[]
+  use_agent_pipeline?: boolean
 }
 
-export interface RecommendationItem {
+export interface RecommendedBusiness {
   rank: number
   business_id: string
   name: string
@@ -65,15 +84,21 @@ export interface RecommendationItem {
 }
 
 export interface GetRecommendationsResponse {
-  recommendations: RecommendationItem[]
+  recommendations: RecommendedBusiness[]
   persona_summary: string
+  preference_profile: string | null
+  cross_domain_inference: string | null
   generation_time_ms: number
 }
+
+// ─── Errors ──────────────────────────────────────────────────────────────────
 
 export interface ApiError {
   status: number
   message: string
 }
+
+// ─── Fetch helpers ───────────────────────────────────────────────────────────
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -81,7 +106,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
     let message = 'An error occurred.'
     try {
       const parsed = JSON.parse(body)
-      message = parsed.detail || parsed.message || message
+      message = parsed.detail?.[0]?.msg ?? parsed.detail ?? parsed.message ?? message
     } catch {
       message = body || message
     }
@@ -90,7 +115,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export async function generateReview(payload: GenerateReviewRequest): Promise<GenerateReviewResponse> {
+export async function generateReview(
+  payload: GenerateReviewRequest
+): Promise<GenerateReviewResponse> {
   try {
     const res = await fetch(`${BASE_URL}/generate-review`, {
       method: 'POST',
@@ -104,7 +131,9 @@ export async function generateReview(payload: GenerateReviewRequest): Promise<Ge
   }
 }
 
-export async function getRecommendations(payload: GetRecommendationsRequest): Promise<GetRecommendationsResponse> {
+export async function getRecommendations(
+  payload: GetRecommendationsRequest
+): Promise<GetRecommendationsResponse> {
   try {
     const res = await fetch(`${BASE_URL}/recommend`, {
       method: 'POST',

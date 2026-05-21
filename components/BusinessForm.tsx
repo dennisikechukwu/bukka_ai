@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { UploadCloud, X, UtensilsCrossed } from 'lucide-react'
 import { BusinessObject } from '@/lib/agents'
+import { NIGERIAN_CITIES, NIGERIAN_STATES } from '@/lib/nigeria-locations'
 
 interface BusinessFormProps {
   value: BusinessObject
@@ -293,6 +294,7 @@ export default function BusinessForm({ value, onChange }: BusinessFormProps) {
         <Field label="City">
           <input
             type="text"
+            list="bf-city-list"
             value={value.city}
             onChange={(e) => update('city', e.target.value)}
             placeholder="Lagos"
@@ -301,18 +303,25 @@ export default function BusinessForm({ value, onChange }: BusinessFormProps) {
             onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
             onBlur={(e) => (e.currentTarget.style.boxShadow = 'none')}
           />
+          <datalist id="bf-city-list">
+            {NIGERIAN_CITIES.map((c) => <option key={c} value={c} />)}
+          </datalist>
         </Field>
         <Field label="State">
           <input
             type="text"
+            list="bf-state-list"
             value={value.state}
             onChange={(e) => update('state', e.target.value)}
-            placeholder="LA"
+            placeholder="Lagos"
             className="h-10 px-3 rounded-lg w-full transition-shadow duration-150"
             style={inputStyle}
             onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
             onBlur={(e) => (e.currentTarget.style.boxShadow = 'none')}
           />
+          <datalist id="bf-state-list">
+            {NIGERIAN_STATES.map((s) => <option key={s} value={s} />)}
+          </datalist>
         </Field>
       </div>
 
@@ -373,6 +382,12 @@ export default function BusinessForm({ value, onChange }: BusinessFormProps) {
           label="WiFi available"
           value={value.attributes.wifi}
           onChange={(v) => updateAttr('wifi', v)}
+        />
+        <div style={{ height: '0.5px', backgroundColor: '#e8e6e0' }} />
+        <Toggle
+          label="Reservations accepted"
+          value={value.attributes.reservations}
+          onChange={(v) => updateAttr('reservations', v)}
         />
       </div>
     </div>

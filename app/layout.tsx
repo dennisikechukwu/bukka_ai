@@ -11,7 +11,7 @@ const lato = Lato({
 })
 
 export const metadata: Metadata = {
-  title: 'Yelp AI Agent — Nigerian Food Critic Powered by AI',
+  title: 'Bukka AI — Nigerian Food Critic Powered by AI',
   description:
     'Get restaurant reviews written in authentic Nigerian voice — or find your next favourite spot.',
 }

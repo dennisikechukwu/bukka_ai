@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Sparkles, ChefHat, AlertTriangle } from 'lucide-react'
+import { usePersistedPersona } from '@/lib/usePersistedPersona'
 import PersonaBuilder from '@/components/PersonaBuilder'
 import BusinessForm from '@/components/BusinessForm'
 import ReviewCard from '@/components/ReviewCard'
@@ -19,6 +20,7 @@ import {
 const DEFAULT_PERSONA: PersonaObject = {
   name: '',
   bio: '',
+  region: 'general',
   tone: 'casual',
   avg_star_rating: 3.5,
   food_preferences: [],
@@ -34,6 +36,7 @@ const DEFAULT_BUSINESS: BusinessObject = {
     price_range: '$$',
     outdoor_seating: false,
     wifi: false,
+    reservations: false,
   },
 }
 
@@ -46,7 +49,7 @@ const inputStyle = {
 }
 
 export default function ReviewGeneratorPage() {
-  const [persona, setPersona] = useState<PersonaObject>(DEFAULT_PERSONA)
+  const { persona, setPersona } = usePersistedPersona(DEFAULT_PERSONA)
   const [business, setBusiness] = useState<BusinessObject>(DEFAULT_BUSINESS)
   const [context, setContext] = useState('')
   const [review, setReview] = useState<GenerateReviewResponse | null>(null)
@@ -55,6 +58,7 @@ export default function ReviewGeneratorPage() {
   const [loadingText, setLoadingText] = useState('Your agent is writing…')
   const [lastPayload, setLastPayload] = useState<GenerateReviewRequest | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const outputRef = useRef<HTMLDivElement>(null)
 
   async function runGenerate(payload: GenerateReviewRequest) {
     setIsLoading(true)
@@ -84,6 +88,7 @@ export default function ReviewGeneratorPage() {
     }
     setLastPayload(payload)
     runGenerate(payload)
+    setTimeout(() => outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
   }
 
   function handleRegenerate() {
@@ -106,7 +111,7 @@ export default function ReviewGeneratorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
 
         {/* LEFT — Input panel */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 input-col">
 
           {/* Persona section */}
           <Section title="Persona">
@@ -154,13 +159,20 @@ export default function ReviewGeneratorPage() {
               if (!isLoading) e.currentTarget.style.backgroundColor = '#D85A30'
             }}
           >
-            <Sparkles size={16} strokeWidth={1.5} />
+            {isLoading ? (
+              <svg width="14" height="14" viewBox="0 0 14 14" style={{ animation: 'spin 0.75s linear infinite', flexShrink: 0 }} aria-hidden="true">
+                <circle cx="7" cy="7" r="5" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.8" />
+                <path d="M7 2 A5 5 0 0 1 12 7" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <Sparkles size={16} strokeWidth={1.5} />
+            )}
             {isLoading ? 'Generating…' : 'Generate review'}
           </button>
         </div>
 
         {/* RIGHT — Output panel */}
-        <div className="flex flex-col gap-4">
+        <div ref={outputRef} className="flex flex-col gap-4 output-col">
           <OutputPanel
             isLoading={isLoading}
             loadingText={loadingText}
@@ -266,14 +278,16 @@ function OutputPanel({
 
   if (review) {
     return (
-      <ReviewCard
-        review={review.review}
-        stars={review.stars}
-        sentiment={review.sentiment}
-        word_count={review.word_count}
-        generation_time_ms={review.generation_time_ms}
-        onRegenerate={onRegenerate}
-      />
+      <div className="result-appear">
+        <ReviewCard
+          review={review.review}
+          stars={review.stars}
+          sentiment={review.sentiment}
+          word_count={review.word_count}
+          generation_time_ms={review.generation_time_ms}
+          onRegenerate={onRegenerate}
+        />
+      </div>
     )
   }
 
