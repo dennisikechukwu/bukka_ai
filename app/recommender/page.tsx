@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Search, AlertTriangle, Plus, Trash2, Zap, GitBranch } from 'lucide-react'
+import { Search, AlertTriangle, Plus, Trash2, Zap, GitBranch, Shuffle } from 'lucide-react'
 import { usePersistedPersona } from '@/lib/usePersistedPersona'
 import { NIGERIAN_CITIES, NIGERIAN_STATES } from '@/lib/nigeria-locations'
 import ReactMarkdown from 'react-markdown'
 import PersonaBuilder from '@/components/PersonaBuilder'
 import RecommendationCard from '@/components/RecommendationCard'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import TagInput from '@/components/TagInput'
+import DomainSelect from '@/components/DomainSelect'
 import {
   getRecommendations,
   PersonaObject,
@@ -19,32 +19,104 @@ import {
   ApiError,
 } from '@/lib/agents'
 
+// ─── Example requests ────────────────────────────────────────────────────────
+
+interface RecommendExample {
+  label: string
+  persona: Omit<PersonaObject, 'food_preferences'> & { food_preferences: string[] }
+  filters: Omit<RecommendationFilters, 'max_results'>
+  history: HistoryItem[]
+  useAgentPipeline: boolean
+}
+
+const RECOMMEND_EXAMPLES: RecommendExample[] = [
+  {
+    label: 'Emeka in Philadelphia',
+    persona: {
+      name: 'Emeka', age: 34, region: 'igbo', tone: 'blunt',
+      avg_star_rating: 4.0,
+      bio: 'Business consultant, eats out 4-5 times a week, no patience for mediocrity',
+      food_preferences: [],
+    },
+    filters: { city: 'Philadelphia', state: 'PA', min_stars: 3.5, target_domain: null },
+    history: [
+      { business_name: 'Amara Kitchen', category: 'Nigerian', stars: 5, notes: 'Bold pepper soup, felt at home' },
+      { business_name: 'Generic Diner', category: 'American', stars: 2, notes: 'Bland and overpriced' },
+    ],
+    useAgentPipeline: false,
+  },
+  {
+    label: 'Temi — Nightlife in Atlanta',
+    persona: {
+      name: 'Temi', age: 27, region: 'yoruba', tone: 'expressive',
+      avg_star_rating: 4.2,
+      bio: 'Event planner, loves energy and good music, always looking for the next vibe',
+      food_preferences: [],
+    },
+    filters: { city: 'Atlanta', state: 'GA', min_stars: 3.5, target_domain: 'Nightlife' },
+    history: [
+      { business_name: 'Buka Restaurant', category: 'Nigerian', stars: 5, notes: 'Felt like home, great egusi' },
+      { business_name: 'The Spot', category: 'American, Bar', stars: 3, notes: 'Decent drinks but no atmosphere' },
+    ],
+    useAgentPipeline: true,
+  },
+  {
+    label: 'Cold-start in Las Vegas',
+    persona: {
+      name: 'Dayo', age: 30, region: 'general', tone: 'casual',
+      avg_star_rating: 3.5, bio: '', food_preferences: [],
+    },
+    filters: { city: 'Las Vegas', state: 'NV', min_stars: 4.0, target_domain: null },
+    history: [],
+    useAgentPipeline: false,
+  },
+]
+
+// ─── History library (30 entries) ────────────────────────────────────────────
+
+const HISTORY_LIBRARY: HistoryItem[] = [
+  { business_name: 'Buka Restaurant',         category: 'Nigerian',               stars: 5, notes: 'Felt like home, great egusi and pounded yam' },
+  { business_name: 'Nkoyo',                   category: 'Nigerian, Continental',  stars: 4, notes: 'Lovely ambience, pricey but worth it for special occasions' },
+  { business_name: 'Yellow Chilli',           category: 'Nigerian',               stars: 4, notes: 'Solid jollof rice, service was a bit slow' },
+  { business_name: 'Mama Cass',               category: 'Nigerian, Seafood',      stars: 5, notes: 'Best catfish pepper soup in Lagos, always busy' },
+  { business_name: 'Amara Kitchen',           category: 'Nigerian',               stars: 5, notes: 'Bold pepper soup, felt right at home' },
+  { business_name: 'Cactus Restaurant',       category: 'Nigerian, Continental',  stars: 4, notes: 'Good for groups, food was consistent' },
+  { business_name: 'The Spot Bar & Grill',    category: 'American, Bar',          stars: 3, notes: 'Decent drinks but the food was underwhelming' },
+  { business_name: 'Zahav',                   category: 'Israeli, Mediterranean', stars: 5, notes: 'Exceptional hummus, one of the best meals I have had abroad' },
+  { business_name: 'Generic Diner',           category: 'American',               stars: 2, notes: 'Bland and overpriced, would not return' },
+  { business_name: 'KFC Lagos',               category: 'Fast Food, Chicken',     stars: 2, notes: 'Convenient but nothing special, expected better' },
+  { business_name: 'Dominos Pizza VI',        category: 'Pizza, Fast Food',       stars: 3, notes: 'Reliable for late nights but nothing exciting' },
+  { business_name: 'Chicken Republic',        category: 'Fast Food, Nigerian',    stars: 3, notes: 'Good value, jollof rice is decent for fast food' },
+  { business_name: 'The Place Restaurant',    category: 'Nigerian',               stars: 4, notes: 'Great local chain, always consistent with the rice dishes' },
+  { business_name: 'Barcelos',               category: 'Continental, Grills',    stars: 4, notes: 'Flame-grilled chicken is excellent, good sides too' },
+  { business_name: 'Ocean Basket',            category: 'Seafood',                stars: 4, notes: 'Fresh seafood, a bit pricey but the grilled prawns are worth it' },
+  { business_name: 'Hard Rock Cafe Lagos',    category: 'American, Bar',          stars: 3, notes: 'More about the experience than the food, average burger' },
+  { business_name: 'Tantalizers',             category: 'Nigerian, Fast Food',    stars: 2, notes: 'Quality has dropped, used to be better' },
+  { business_name: 'Mr Biggs',               category: 'Nigerian, Fast Food',    stars: 2, notes: 'Nostalgic but the food quality is inconsistent' },
+  { business_name: 'Jevenik',                category: 'Nigerian, Seafood',      stars: 4, notes: 'Excellent pepper soup and catfish, always reliable' },
+  { business_name: 'Craft Grill',             category: 'Continental, Grills',    stars: 4, notes: 'Best beef burger in Abuja, great spot for lunch' },
+  { business_name: 'Nandos',                 category: 'Grills, Continental',    stars: 4, notes: 'Peri-peri chicken is always on point, fast and consistent' },
+  { business_name: 'Kilimanjaro',             category: 'Nigerian, Fast Food',    stars: 3, notes: 'Good shawarma and grills, great for a quick bite' },
+  { business_name: 'Ofada Boy',              category: 'Nigerian',               stars: 5, notes: 'Authentic ofada stew experience, one of a kind' },
+  { business_name: 'Blackbell Restaurant',   category: 'Continental, Nigerian',  stars: 4, notes: 'Upscale Nigerian food done right, great for business dinners' },
+  { business_name: 'Sky Restaurant & Lounge',category: 'Continental, Lounge',    stars: 4, notes: 'Amazing view, food was good but slightly overpriced' },
+  { business_name: 'Spice Route',            category: 'Indian, Asian',          stars: 4, notes: 'Great chicken tikka, reminded me of bold Nigerian spice levels' },
+  { business_name: 'Haiku',                  category: 'Japanese, Sushi',        stars: 3, notes: 'Decent sushi for Lagos standards, not authentic but enjoyable' },
+  { business_name: 'Jade Garden',            category: 'Chinese',                stars: 3, notes: 'Reliable Chinese food, nothing spectacular but solid' },
+  { business_name: 'Veggie Victory',         category: 'Vegetarian, Nigerian',   stars: 4, notes: 'Surprisingly flavourful plant-based Nigerian dishes' },
+  { business_name: 'Freddies Restaurant',    category: 'Continental',            stars: 3, notes: 'Good pasta, service could be better, nice outdoor seating' },
+]
+
+// ─── Defaults ────────────────────────────────────────────────────────────────
+
 const DEFAULT_PERSONA: PersonaObject = {
-  name: '',
-  bio: '',
-  region: 'general',
-  tone: 'casual',
-  avg_star_rating: 3.5,
-  food_preferences: [],
+  name: '', bio: '', region: 'general', tone: 'casual',
+  avg_star_rating: 3.5, food_preferences: [],
 }
 
 const DEFAULT_FILTERS: RecommendationFilters = {
-  city: '',
-  state: '',
-  categories: [],
-  min_stars: 3.0,
-  max_results: 5,
-  target_domain: '',
+  city: '', state: '', min_stars: 3.0, max_results: 10, target_domain: null,
 }
-
-const DEFAULT_HISTORY_ITEM: HistoryItem = {
-  business_name: '',
-  category: '',
-  stars: 4,
-  notes: '',
-}
-
-const CATEGORY_SUGGESTIONS = ['Restaurants', 'Nightlife', 'Bars', 'Fast Food', 'Seafood', 'Grills']
 
 const inputStyle = {
   border: '0.5px solid #D3D1C7',
@@ -53,6 +125,8 @@ const inputStyle = {
   backgroundColor: '#fff',
   outline: 'none',
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RecommenderPage() {
   const { persona, setPersona } = usePersistedPersona(DEFAULT_PERSONA)
@@ -64,6 +138,7 @@ export default function RecommenderPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [loadingText, setLoadingText] = useState('Your agent is thinking…')
   const [lastPayload, setLastPayload] = useState<GetRecommendationsRequest | null>(null)
+  const [activeExample, setActiveExample] = useState<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const outputRef = useRef<HTMLDivElement>(null)
 
@@ -72,7 +147,7 @@ export default function RecommenderPage() {
   }
 
   function addHistoryItem() {
-    setHistory((h) => [...h, { ...DEFAULT_HISTORY_ITEM }])
+    setHistory((h) => [...h, { business_name: '', category: '', stars: 4, notes: '' }])
   }
 
   function updateHistoryItem(index: number, patch: Partial<HistoryItem>) {
@@ -83,13 +158,17 @@ export default function RecommenderPage() {
     setHistory((h) => h.filter((_, i) => i !== index))
   }
 
+  function shuffleHistory() {
+    const shuffled = [...HISTORY_LIBRARY].sort(() => Math.random() - 0.5)
+    setHistory(shuffled.slice(0, 3))
+  }
+
   async function runRecommend(payload: GetRecommendationsRequest) {
     setIsLoading(true)
     setLoadingText('Your agent is thinking…')
     setError(null)
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => setLoadingText('Still working on it…'), 5000)
-
     try {
       const res = await getRecommendations(payload)
       setResult(res)
@@ -104,12 +183,15 @@ export default function RecommenderPage() {
   }
 
   function handleSubmit() {
-    const cleanHistory = history.filter((h) => h.business_name.trim())
+    const cleanHistory = history.filter((h) => h.business_name.trim() && h.notes.trim())
     const payload: GetRecommendationsRequest = {
       persona,
       filters: {
-        ...filters,
-        target_domain: filters.target_domain?.trim() || undefined,
+        city: filters.city,
+        state: filters.state,
+        min_stars: filters.min_stars,
+        max_results: 10,
+        target_domain: filters.target_domain || null,
       },
       history: cleanHistory.length > 0 ? cleanHistory : undefined,
       use_agent_pipeline: useAgentPipeline,
@@ -123,9 +205,27 @@ export default function RecommenderPage() {
     if (lastPayload) runRecommend(lastPayload)
   }
 
+  function loadExample(i: number) {
+    if (activeExample === i) {
+      // clicking the active example again clears everything
+      setPersona(DEFAULT_PERSONA)
+      setFilters(DEFAULT_FILTERS)
+      setHistory([])
+      setUseAgentPipeline(false)
+      setActiveExample(null)
+      return
+    }
+    const ex = RECOMMEND_EXAMPLES[i]
+    setPersona({ ...DEFAULT_PERSONA, ...ex.persona })
+    setFilters({ ...DEFAULT_FILTERS, ...ex.filters })
+    setHistory(ex.history)
+    setUseAgentPipeline(ex.useAgentPipeline)
+    setActiveExample(i)
+  }
+
   return (
-    <div className="w-full flex-1 mx-auto px-6 py-8" style={{ maxWidth: '1200px' }}>
-      <div className="mb-8">
+    <div className="w-full flex-1 mx-auto px-4 py-6 sm:px-6 sm:py-8" style={{ maxWidth: '1200px' }}>
+      <div className="mb-6">
         <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#2C2C2A', lineHeight: 1.2 }}>
           Restaurant Recommender
         </h1>
@@ -134,13 +234,20 @@ export default function RecommenderPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      {/* Example strip */}
+      <ExampleStrip examples={RECOMMEND_EXAMPLES} activeIndex={activeExample} onSelect={loadExample} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mt-6">
         {/* ── LEFT ── */}
         <div className="flex flex-col gap-6 input-col">
 
           {/* Persona */}
           <Section title="Persona">
-            <PersonaBuilder value={persona} onChange={setPersona} />
+            <PersonaBuilder
+              value={persona}
+              onChange={setPersona}
+              bioPlaceholder="e.g. Business consultant, eats out 4-5x a week, no patience for mediocrity"
+            />
           </Section>
 
           {/* Visit History */}
@@ -148,17 +255,30 @@ export default function RecommenderPage() {
             title="Visit history"
             subtitle="Optional — activates preference learning"
             action={
-              <button
-                type="button"
-                onClick={addHistoryItem}
-                className="flex items-center gap-1 transition-colors duration-150"
-                style={{ fontSize: '12px', fontWeight: 700, color: '#D85A30' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#C24E27')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#D85A30')}
-              >
-                <Plus size={13} strokeWidth={2.5} />
-                Add visit
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={shuffleHistory}
+                  className="flex items-center gap-1 transition-colors duration-150"
+                  style={{ fontSize: '12px', fontWeight: 700, color: '#8C8982' }}
+                  title="Random picks from history library"
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#D85A30')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#8C8982')}
+                >
+                  <Shuffle size={13} strokeWidth={2} />
+                </button>
+                <button
+                  type="button"
+                  onClick={addHistoryItem}
+                  className="flex items-center gap-1 transition-colors duration-150"
+                  style={{ fontSize: '12px', fontWeight: 700, color: '#D85A30' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#C24E27')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#D85A30')}
+                >
+                  <Plus size={13} strokeWidth={2.5} />
+                  Add visit
+                </button>
+              </div>
             }
           >
             {history.length === 0 ? (
@@ -191,10 +311,13 @@ export default function RecommenderPage() {
           {/* Filters */}
           <Section title="Filters">
             <div className="flex flex-col gap-4">
+
+              {/* City + State */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label style={{ fontSize: '12px', color: '#8C8982' }}>City</label>
-                  <input type="text" list="rc-city-list" value={filters.city} onChange={(e) => updateFilter('city', e.target.value)}
+                  <input type="text" list="rc-city-list" value={filters.city}
+                    onChange={(e) => updateFilter('city', e.target.value)}
                     placeholder="Lagos" className="h-10 px-3 rounded-lg w-full transition-shadow duration-150" style={inputStyle}
                     onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
                     onBlur={(e) => (e.currentTarget.style.boxShadow = 'none')} />
@@ -204,7 +327,8 @@ export default function RecommenderPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label style={{ fontSize: '12px', color: '#8C8982' }}>State</label>
-                  <input type="text" list="rc-state-list" value={filters.state} onChange={(e) => updateFilter('state', e.target.value)}
+                  <input type="text" list="rc-state-list" value={filters.state}
+                    onChange={(e) => updateFilter('state', e.target.value)}
                     placeholder="Lagos" className="h-10 px-3 rounded-lg w-full transition-shadow duration-150" style={inputStyle}
                     onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
                     onBlur={(e) => (e.currentTarget.style.boxShadow = 'none')} />
@@ -214,34 +338,16 @@ export default function RecommenderPage() {
                 </div>
               </div>
 
-              {/* Categories */}
-              <div className="flex flex-col gap-2">
-                <label style={{ fontSize: '12px', color: '#8C8982' }}>Categories</label>
-                <TagInput tags={filters.categories} onChange={(t) => updateFilter('categories', t)} placeholder="Type a category and press Enter" />
-                <div className="flex flex-wrap gap-1.5">
-                  {CATEGORY_SUGGESTIONS.filter((s) => !filters.categories.includes(s)).map((s) => (
-                    <button key={s} type="button"
-                      onClick={() => updateFilter('categories', [...filters.categories, s])}
-                      className="px-2.5 py-1 rounded transition-all duration-150"
-                      style={{ fontSize: '12px', color: '#5F5E5A', backgroundColor: '#F5F4F0', border: '0.5px solid #e8e6e0' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#ECEAE4'; e.currentTarget.style.borderColor = '#C8C5BC' }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F5F4F0'; e.currentTarget.style.borderColor = '#e8e6e0' }}
-                    >+ {s}</button>
-                  ))}
-                </div>
-              </div>
-
               {/* Target domain */}
               <div className="flex flex-col gap-1.5">
                 <label style={{ fontSize: '12px', color: '#8C8982' }}>
                   Target domain
                   <span style={{ fontSize: '11px', color: '#B0ADA6', marginLeft: '6px' }}>Triggers cross-domain AI reasoning</span>
                 </label>
-                <input type="text" value={filters.target_domain ?? ''} onChange={(e) => updateFilter('target_domain', e.target.value)}
-                  placeholder="e.g. Nightlife, Spas, Coffee Shops…"
-                  className="h-10 px-3 rounded-lg w-full transition-shadow duration-150" style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
-                  onBlur={(e) => (e.currentTarget.style.boxShadow = 'none')} />
+                <DomainSelect
+                  value={filters.target_domain ?? null}
+                  onChange={(val) => updateFilter('target_domain', val)}
+                />
               </div>
 
               {/* Min stars */}
@@ -253,30 +359,16 @@ export default function RecommenderPage() {
                   </span>
                 </div>
                 <input type="range" min={1} max={5} step={0.5} value={filters.min_stars}
-                  onChange={(e) => updateFilter('min_stars', parseFloat(e.target.value))} style={{ cursor: 'pointer' }} />
+                  onChange={(e) => updateFilter('min_stars', parseFloat(e.target.value))}
+                  style={{ cursor: 'pointer' }} />
                 <div className="flex justify-between" style={{ fontSize: '11px', color: '#B0ADA6' }}>
                   <span>1.0</span><span>5.0</span>
                 </div>
-              </div>
-
-              {/* Max results */}
-              <div className="flex flex-col gap-2">
-                <label style={{ fontSize: '12px', color: '#8C8982' }}>Max results</label>
-                <div className="flex items-center gap-2">
-                  {([3, 5, 10] as const).map((n) => (
-                    <button key={n} type="button" onClick={() => updateFilter('max_results', n)}
-                      className="flex-1 h-9 rounded-lg transition-all duration-150"
-                      style={{
-                        fontSize: '14px', fontWeight: 700,
-                        backgroundColor: filters.max_results === n ? '#D85A30' : 'transparent',
-                        color: filters.max_results === n ? '#fff' : '#5F5E5A',
-                        border: '0.5px solid', borderColor: filters.max_results === n ? '#D85A30' : '#D3D1C7',
-                      }}
-                      onMouseEnter={(e) => { if (filters.max_results !== n) e.currentTarget.style.backgroundColor = '#F5F4F0' }}
-                      onMouseLeave={(e) => { if (filters.max_results !== n) e.currentTarget.style.backgroundColor = 'transparent' }}
-                    >{n}</button>
-                  ))}
-                </div>
+                {filters.min_stars < 3.0 && (
+                  <p style={{ fontSize: '11px', color: '#B87C0A', backgroundColor: '#FFFBF0', border: '0.5px solid #F5D88A', borderRadius: '6px', padding: '6px 10px', lineHeight: 1.5 }}>
+                    Results may be fewer at lower star ratings
+                  </p>
+                )}
               </div>
             </div>
           </Section>
@@ -363,6 +455,56 @@ export default function RecommenderPage() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+function ExampleStrip({
+  examples,
+  activeIndex,
+  onSelect,
+}: {
+  examples: { label: string }[]
+  activeIndex: number | null
+  onSelect: (i: number) => void
+}) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span style={{ fontSize: '11px', color: '#B0ADA6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>
+        Try an example:
+      </span>
+      {examples.map((ex, i) => {
+        const isActive = activeIndex === i
+        return (
+          <button
+            key={ex.label}
+            type="button"
+            onClick={() => onSelect(i)}
+            className="px-3 py-1.5 rounded-lg transition-all duration-150"
+            style={{
+              fontSize: '12px',
+              fontWeight: 700,
+              color: isActive ? '#fff' : '#5F5E5A',
+              backgroundColor: isActive ? '#D85A30' : '#fff',
+              border: `0.5px solid ${isActive ? '#D85A30' : '#DDD9CF'}`,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.borderColor = '#D85A30'
+                e.currentTarget.style.color = '#D85A30'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.borderColor = '#DDD9CF'
+                e.currentTarget.style.color = '#5F5E5A'
+              }
+            }}
+          >
+            ✦ {ex.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function Section({
   title, subtitle, action, children,
 }: {
@@ -372,14 +514,14 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-4 p-5 rounded-xl"
+    <div className="flex flex-col gap-4 p-4 sm:p-5 rounded-xl"
       style={{ border: '1px solid #DDD9CF', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-0.5 min-w-0">
           <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#2C2C2A' }}>{title}</h2>
           {subtitle && <span style={{ fontSize: '11px', color: '#B0ADA6' }}>{subtitle}</span>}
         </div>
-        {action}
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       {children}
     </div>
@@ -394,24 +536,30 @@ function HistoryItemRow({
   onUpdate: (i: number, patch: Partial<HistoryItem>) => void
   onRemove: (i: number) => void
 }) {
+  const [notesTouched, setNotesTouched] = useState(false)
+  const showNotesError = notesTouched && item.notes.trim() === ''
+
   return (
     <div className="flex flex-col gap-2 p-3 rounded-xl" style={{ border: '0.5px solid #e8e6e0', backgroundColor: '#FAFAF8' }}>
-      <div className="grid grid-cols-2 gap-2">
-        <input type="text" value={item.business_name} onChange={(e) => onUpdate(index, { business_name: e.target.value })}
-          placeholder="Restaurant name" className="h-9 px-3 rounded-lg transition-shadow duration-150"
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <input type="text" value={item.business_name}
+          onChange={(e) => onUpdate(index, { business_name: e.target.value })}
+          placeholder="Restaurant name"
+          className="h-9 px-3 rounded-lg transition-shadow duration-150"
           style={{ border: '0.5px solid #D3D1C7', fontSize: '13px', color: '#2C2C2A', backgroundColor: '#fff', outline: 'none' }}
           onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
           onBlur={(e) => (e.currentTarget.style.boxShadow = 'none')} />
-        <input type="text" value={item.category} onChange={(e) => onUpdate(index, { category: e.target.value })}
-          placeholder="Category" className="h-9 px-3 rounded-lg transition-shadow duration-150"
+        <input type="text" value={item.category}
+          onChange={(e) => onUpdate(index, { category: e.target.value })}
+          placeholder="e.g. Nigerian, Fast Food, Seafood"
+          className="h-9 px-3 rounded-lg transition-shadow duration-150"
           style={{ border: '0.5px solid #D3D1C7', fontSize: '13px', color: '#2C2C2A', backgroundColor: '#fff', outline: 'none' }}
           onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
           onBlur={(e) => (e.currentTarget.style.boxShadow = 'none')} />
       </div>
       <div className="flex items-center gap-2">
-        {/* Star picker */}
         <div className="flex items-center gap-1">
-          {[1,2,3,4,5].map((s) => (
+          {[1, 2, 3, 4, 5].map((s) => (
             <button key={s} type="button" onClick={() => onUpdate(index, { stars: s })} aria-label={`${s} stars`}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill={item.stars >= s ? '#EF9F27' : '#e0ddd6'}>
                 <path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7z" />
@@ -429,12 +577,20 @@ function HistoryItemRow({
           <Trash2 size={12} strokeWidth={1.5} /> Remove
         </button>
       </div>
-      <input type="text" value={item.notes ?? ''} onChange={(e) => onUpdate(index, { notes: e.target.value })}
-        placeholder="Notes (optional) — what did you like or dislike?"
+      <input type="text" value={item.notes}
+        onChange={(e) => onUpdate(index, { notes: e.target.value })}
+        onBlur={() => setNotesTouched(true)}
+        placeholder="e.g. Loved the bold spice, felt like home"
         className="h-8 px-3 rounded-lg transition-shadow duration-150"
-        style={{ border: '0.5px solid #D3D1C7', fontSize: '12px', color: '#2C2C2A', backgroundColor: '#fff', outline: 'none' }}
+        style={{
+          border: `0.5px solid ${showNotesError ? '#F5BEBE' : '#D3D1C7'}`,
+          fontSize: '12px', color: '#2C2C2A', backgroundColor: '#fff', outline: 'none',
+        }}
         onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
-        onBlur={(e) => (e.currentTarget.style.boxShadow = 'none')} />
+      />
+      {showNotesError && (
+        <p style={{ fontSize: '11px', color: '#C0392B', marginTop: '-4px' }}>Notes are required</p>
+      )}
     </div>
   )
 }
@@ -480,7 +636,7 @@ function OutputPanel({
       <div className="flex flex-col gap-4 result-appear">
         {/* Persona summary */}
         <div className="px-4 py-4 rounded-xl"
-          style={{ backgroundColor: '#FFF9F7', borderLeft: '3px solid #D85A30', border: '0.5px solid #FAD9CC', borderLeftWidth: '3px' }}>
+          style={{ backgroundColor: '#FFF9F7', border: '0.5px solid #FAD9CC', borderLeft: '3px solid #D85A30' }}>
           <p style={{ fontSize: '11px', fontWeight: 400, color: '#B0ADA6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
             Agent&apos;s read on {personaName || 'your persona'}
           </p>
@@ -492,7 +648,7 @@ function OutputPanel({
           </p>
         </div>
 
-        {/* Preference profile — Agent 1 output */}
+        {/* Preference profile — Agent 1 */}
         {result.preference_profile && (
           <div className="flex flex-col gap-2 px-4 py-4 rounded-xl"
             style={{ backgroundColor: '#F7F9FF', border: '0.5px solid #C8D4F5' }}>
@@ -507,14 +663,12 @@ function OutputPanel({
                   ul: ({ children }) => <ul style={{ margin: '0 0 8px 16px', padding: 0 }}>{children}</ul>,
                   li: ({ children }) => <li style={{ marginBottom: '4px', fontWeight: 300 }}>{children}</li>,
                 }}
-              >
-                {result.preference_profile}
-              </ReactMarkdown>
+              >{result.preference_profile}</ReactMarkdown>
             </div>
           </div>
         )}
 
-        {/* Cross-domain inference — Agent 2 output */}
+        {/* Cross-domain inference — Agent 2 */}
         {result.cross_domain_inference && (
           <div className="flex flex-col gap-2 px-4 py-4 rounded-xl"
             style={{ backgroundColor: '#FFFBF0', border: '0.5px solid #F5D88A' }}>
@@ -529,9 +683,7 @@ function OutputPanel({
                   ul: ({ children }) => <ul style={{ margin: '0 0 8px 16px', padding: 0 }}>{children}</ul>,
                   li: ({ children }) => <li style={{ marginBottom: '4px', fontWeight: 300 }}>{children}</li>,
                 }}
-              >
-                {result.cross_domain_inference}
-              </ReactMarkdown>
+              >{result.cross_domain_inference}</ReactMarkdown>
             </div>
           </div>
         )}

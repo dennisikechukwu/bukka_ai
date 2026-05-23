@@ -1,9 +1,8 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bukka-ai.vercel.app'
 
 export type Region = 'yoruba' | 'igbo' | 'hausa' | 'edo' | 'general'
-export type Tone = 'expressive' | 'blunt' | 'formal' | 'casual' | 'sarcastic'
+export type Tone = 'expressive' | 'blunt' | 'formal' | 'casual'
 export type Sentiment = 'positive' | 'negative' | 'mixed'
-export type PriceRange = '$' | '$$' | '$$$' | '$$$$'
 
 export interface PersonaObject {
   name: string
@@ -16,20 +15,12 @@ export interface PersonaObject {
   bio: string
 }
 
-export interface BusinessAttributes {
-  price_range: PriceRange
-  outdoor_seating: boolean
-  wifi: boolean
-  reservations: boolean
-}
-
 export interface BusinessObject {
   name: string
   category: string
   city: string
   state: string
   stars: number
-  attributes: BusinessAttributes
 }
 
 export interface GenerateReviewRequest {
@@ -52,16 +43,15 @@ export interface HistoryItem {
   business_name: string
   category: string
   stars: number
-  notes?: string
+  notes: string
 }
 
 export interface RecommendationFilters {
   city: string
   state: string
-  categories: string[]
   min_stars: number
   max_results: number
-  target_domain?: string
+  target_domain?: string | null
 }
 
 export interface GetRecommendationsRequest {

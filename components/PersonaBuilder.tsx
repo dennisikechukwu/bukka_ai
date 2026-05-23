@@ -6,22 +6,22 @@ import { PersonaObject, Region, Tone } from '@/lib/agents'
 interface PersonaBuilderProps {
   value: PersonaObject
   onChange: (updated: PersonaObject) => void
+  bioPlaceholder?: string
 }
 
 const TONE_OPTIONS: { value: Tone; label: string }[] = [
-  { value: 'casual',      label: 'Casual'      },
-  { value: 'expressive',  label: 'Expressive'  },
-  { value: 'blunt',       label: 'Blunt'       },
-  { value: 'formal',      label: 'Formal'      },
-  { value: 'sarcastic',   label: 'Sarcastic'   },
+  { value: 'casual',     label: 'Casual'     },
+  { value: 'expressive', label: 'Expressive' },
+  { value: 'blunt',      label: 'Blunt'      },
+  { value: 'formal',     label: 'Formal'     },
 ]
 
-const REGION_OPTIONS: { value: Region; label: string; hint: string }[] = [
-  { value: 'general', label: 'General (Lagos)',  hint: 'Code-switching, scene-setting, Pidgin' },
-  { value: 'yoruba',  label: 'Yoruba',           hint: 'Musical rhythm, verdict-last, Omo!' },
-  { value: 'igbo',    label: 'Igbo',             hint: 'Verdict-first, quality standard, Nna!' },
-  { value: 'hausa',   label: 'Hausa',            hint: 'Measured, family-centred, Wallahi' },
-  { value: 'edo',     label: 'Edo',              hint: 'Warm direct address, bold-flavour bar' },
+const REGION_OPTIONS: { value: Region; label: string }[] = [
+  { value: 'general', label: 'General' },
+  { value: 'yoruba',  label: 'Yoruba'  },
+  { value: 'igbo',    label: 'Igbo'    },
+  { value: 'hausa',   label: 'Hausa'   },
+  { value: 'edo',     label: 'Edo'     },
 ]
 
 const selectStyle = {
@@ -52,7 +52,7 @@ function SelectChevron() {
   )
 }
 
-export default function PersonaBuilder({ value, onChange }: PersonaBuilderProps) {
+export default function PersonaBuilder({ value, onChange, bioPlaceholder }: PersonaBuilderProps) {
   const initials = value.name
     ? value.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
     : '?'
@@ -61,11 +61,9 @@ export default function PersonaBuilder({ value, onChange }: PersonaBuilderProps)
     onChange({ ...value, [key]: val })
   }
 
-  const selectedRegion = REGION_OPTIONS.find((r) => r.value === value.region)
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Avatar + Name */}
+      {/* Avatar + Name + Age */}
       <div className="flex items-center gap-3">
         <div
           className="flex items-center justify-center rounded-full shrink-0 select-none"
@@ -84,6 +82,20 @@ export default function PersonaBuilder({ value, onChange }: PersonaBuilderProps)
           onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
           onBlur={(e)  => (e.currentTarget.style.boxShadow = 'none')}
         />
+        <input
+          type="number"
+          min={1}
+          max={120}
+          value={value.age ?? ''}
+          onChange={(e) =>
+            update('age', e.target.value ? parseInt(e.target.value, 10) : undefined)
+          }
+          placeholder="Age"
+          className="h-10 px-3 rounded-lg transition-shadow duration-150"
+          style={{ ...selectStyle, width: '72px' }}
+          onFocus={(e) => (e.currentTarget.style.boxShadow = '0 0 0 2px #D85A30, 0 0 0 3px #fff')}
+          onBlur={(e)  => (e.currentTarget.style.boxShadow = 'none')}
+        />
       </div>
 
       {/* Bio */}
@@ -91,7 +103,7 @@ export default function PersonaBuilder({ value, onChange }: PersonaBuilderProps)
         <textarea
           value={value.bio}
           onChange={(e) => update('bio', e.target.value)}
-          placeholder="Brief description of this persona's food personality…"
+          placeholder={bioPlaceholder ?? "Brief description of this persona's food personality…"}
           rows={3}
           className="px-3 py-2.5 rounded-lg resize-none transition-shadow duration-150"
           style={{ ...selectStyle, lineHeight: 1.65 }}
@@ -138,13 +150,6 @@ export default function PersonaBuilder({ value, onChange }: PersonaBuilderProps)
           </div>
         </Field>
       </div>
-
-      {/* Region hint */}
-      {selectedRegion && (
-        <p style={{ fontSize: '11px', color: '#B0ADA6', marginTop: '-8px', lineHeight: 1.5 }}>
-          {selectedRegion.hint}
-        </p>
-      )}
 
       {/* Avg Star Rating */}
       <Field label="Avg. star rating">
