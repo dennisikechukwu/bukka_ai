@@ -36,7 +36,7 @@ const RECOMMEND_EXAMPLES: RecommendExample[] = [
       name: 'Emeka', age: 34, region: 'igbo', tone: 'blunt',
       avg_star_rating: 4.0,
       bio: 'Business consultant, eats out 4-5 times a week, no patience for mediocrity',
-      food_preferences: [],
+      food_preferences: ['ofe onugbu', 'pounded yam', 'nkwobi', 'isi ewu', 'grilled fish', 'egusi soup', 'ofe akwu'],
     },
     filters: { city: 'Philadelphia', state: 'PA', min_stars: 3.5, target_domain: null },
     history: [
@@ -51,7 +51,7 @@ const RECOMMEND_EXAMPLES: RecommendExample[] = [
       name: 'Temi', age: 27, region: 'yoruba', tone: 'expressive',
       avg_star_rating: 4.2,
       bio: 'Event planner, loves energy and good music, always looking for the next vibe',
-      food_preferences: [],
+      food_preferences: ['suya', 'small chops', 'amala', 'efo riro', 'fried plantain', 'jollof rice', 'puff puff'],
     },
     filters: { city: 'Atlanta', state: 'GA', min_stars: 3.5, target_domain: 'Nightlife' },
     history: [
@@ -64,7 +64,9 @@ const RECOMMEND_EXAMPLES: RecommendExample[] = [
     label: 'Cold-start in Las Vegas',
     persona: {
       name: 'Dayo', age: 30, region: 'general', tone: 'casual',
-      avg_star_rating: 3.5, bio: '', food_preferences: [],
+      avg_star_rating: 3.5,
+      bio: 'Nigerian visiting Las Vegas for a work conference, new to Bukka AI, loves bold flavours and is open to trying anything good',
+      food_preferences: ['jollof rice', 'suya', 'pepper soup', 'grilled chicken', 'fried plantain', 'small chops', 'seafood'],
     },
     filters: { city: 'Las Vegas', state: 'NV', min_stars: 4.0, target_domain: null },
     history: [],
