@@ -53,24 +53,12 @@ const RECOMMEND_EXAMPLES: RecommendExample[] = [
       bio: 'Event planner, loves energy and good music, always looking for the next vibe',
       food_preferences: ['suya', 'small chops', 'amala', 'efo riro', 'fried plantain', 'jollof rice', 'puff puff'],
     },
-    filters: { city: 'Atlanta', state: 'GA', min_stars: 3.5, target_domain: 'Nightlife' },
+    filters: { city: 'Philadelphia', state: 'PA', min_stars: 3.5, target_domain: 'Nightlife' },
     history: [
       { business_name: 'Buka Restaurant', category: 'Nigerian', stars: 5, notes: 'Felt like home, great egusi' },
       { business_name: 'The Spot', category: 'American, Bar', stars: 3, notes: 'Decent drinks but no atmosphere' },
     ],
     useAgentPipeline: true,
-  },
-  {
-    label: 'Cold-start in Las Vegas',
-    persona: {
-      name: 'Dayo', age: 30, region: 'general', tone: 'casual',
-      avg_star_rating: 3.5,
-      bio: 'Nigerian visiting Las Vegas for a work conference, new to Bukka AI, loves bold flavours and is open to trying anything good',
-      food_preferences: ['jollof rice', 'suya', 'pepper soup', 'grilled chicken', 'fried plantain', 'small chops', 'seafood'],
-    },
-    filters: { city: 'Las Vegas', state: 'NV', min_stars: 4.0, target_domain: null },
-    history: [],
-    useAgentPipeline: false,
   },
 ]
 
