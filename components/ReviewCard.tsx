@@ -46,7 +46,7 @@ export default function ReviewCard({
       {/* Review body — rendered as markdown */}
       <div
         className="px-4 py-4 rounded-xl"
-        style={{ backgroundColor: '#FAFAF8', border: '0.5px solid #e8e6e0' }}
+        style={{ backgroundColor: '#fff', border: '0.5px solid #e8e6e0' }}
       >
         <div
           className="prose-review"

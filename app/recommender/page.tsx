@@ -637,15 +637,15 @@ function OutputPanel({
     return (
       <div className="flex flex-col gap-4 result-appear">
         {/* Persona summary */}
-        <div className="px-4 py-4 rounded-xl"
-          style={{ backgroundColor: '#FFF9F7', border: '0.5px solid #FAD9CC', borderLeft: '3px solid #D85A30' }}>
-          <p style={{ fontSize: '11px', fontWeight: 400, color: '#B0ADA6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+        <div className="flex flex-col gap-2 px-4 py-4 rounded-xl"
+          style={{ border: '0.5px solid #e8e6e0', backgroundColor: '#fff' }}>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: '#B0ADA6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Agent&apos;s read on {personaName || 'your persona'}
           </p>
           <p style={{ fontSize: '14px', fontWeight: 300, fontStyle: 'italic', color: '#5F5E5A', lineHeight: 1.75 }}>
             {result.persona_summary}
           </p>
-          <p style={{ fontSize: '11px', color: '#B0ADA6', marginTop: '10px' }}>
+          <p style={{ fontSize: '11px', color: '#B0ADA6', marginTop: '2px' }}>
             {result.generation_time_ms}ms · {result.recommendations.length} results
           </p>
         </div>
@@ -653,8 +653,8 @@ function OutputPanel({
         {/* Preference profile — Agent 1 */}
         {result.preference_profile && (
           <div className="flex flex-col gap-2 px-4 py-4 rounded-xl"
-            style={{ backgroundColor: '#F7F9FF', border: '0.5px solid #C8D4F5' }}>
-            <p style={{ fontSize: '11px', color: '#3B4B8C', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
+            style={{ border: '0.5px solid #e8e6e0', backgroundColor: '#fff' }}>
+            <p style={{ fontSize: '11px', fontWeight: 700, color: '#B0ADA6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Preference Analyst · Agent 1
             </p>
             <div style={{ fontSize: '13px', color: '#2C2C2A', lineHeight: 1.7 }}>
@@ -673,8 +673,8 @@ function OutputPanel({
         {/* Cross-domain inference — Agent 2 */}
         {result.cross_domain_inference && (
           <div className="flex flex-col gap-2 px-4 py-4 rounded-xl"
-            style={{ backgroundColor: '#FFFBF0', border: '0.5px solid #F5D88A' }}>
-            <p style={{ fontSize: '11px', color: '#7A5A00', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
+            style={{ border: '0.5px solid #e8e6e0', backgroundColor: '#fff' }}>
+            <p style={{ fontSize: '11px', fontWeight: 700, color: '#B0ADA6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Domain Translator · Agent 2
             </p>
             <div style={{ fontSize: '13px', color: '#2C2C2A', lineHeight: 1.7 }}>
